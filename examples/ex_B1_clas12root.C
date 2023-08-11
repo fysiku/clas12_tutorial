@@ -24,67 +24,6 @@
  *   clas12root ex_B1_clas12root.C 
  */
 
-
-
-// =============================================================================
-// User-defined structs for this analysis code
-struct EventVariables {
-    double Q2;
-    double x;
-    double W;
-    double y;
-};
-
-struct Particle {
-    int  pid=0;
-    int  pindex=0;
-    float px=0;
-    float py=0;
-    float pz=0;
-    float p=0;
-    float E=0;
-    float theta=0;
-    float phi=0;
-    float Epcal=0; 
-};
-
-// =============================================================================
-// User-defined functions for this analysis code
-EventVariables calculateEventVariables(TLorentzVector kf) {
-    const double Mp = 0.938272; // proton mass, GeV
-    const double Me = 0.000511; // electron mass, GeV
-    const double beamE = 10.6041; // electron beam energy for Fall2018 RG-A, GeV
-
-    TLorentzVector vec_eIn(0, 0, std::sqrt(beamE * beamE - Me * Me), beamE); // Px, Py, Pz, E for initial electron
-    TLorentzVector vec_pIn(0, 0, 0, Mp); // Px, Py, Pz, E for initial (at rest) proton
-
-
-    TLorentzVector q = vec_eIn - kf;
-    double Q2 = -q.M2();
-    double x = Q2 / (2 * vec_pIn.Dot(q));
-    double W = (q + vec_pIn).M();
-    double y = (q * vec_pIn) / (vec_eIn * vec_pIn);
-
-    return {Q2, x, W, y};
-}
-
-int findHighestEnergyElectronIndex(const std::vector<Particle>& particles) {
-    float maxEnergy = -1;
-    int maxIndex = -1;
-
-    for (int i = 0; i < particles.size(); ++i) {
-        const Particle& particle = particles[i];
-        if (particle.pid == 11 && particle.E > maxEnergy) {
-            maxEnergy = particle.E;
-            maxIndex = i;
-        }
-    }
-
-    return maxIndex;
-}
-
-
-
 // =============================================================================
 // Main function
 int ex_B1_clas12root(const char * hipoFile = "/cache/clas12/rg-a/production/recon/fall2018/torus-1/pass1/v1/dst/train/nSidis/nSidis_005032.hipo"){
@@ -96,24 +35,16 @@ int ex_B1_clas12root(const char * hipoFile = "/cache/clas12/rg-a/production/reco
     TTree *tree = new TTree("events", "DIS event data");
 
     // Declare variables
-    double ele_P;
-    double ele_Theta;
-    double ele_Phi;
-    double x;
-    double Q2;
-    double W;
-    double y;
+    double pi_P;
+    double pi_Theta;
+    double pi_Phi;
 
     int run, evnum, torus, helicity;
     
     // Set branch addresses
-    tree->Branch("ele_P", &ele_P);
-    tree->Branch("ele_Theta", &ele_Theta);
-    tree->Branch("ele_Phi", &ele_Phi);
-    tree->Branch("x", &x);
-    tree->Branch("Q2", &Q2);
-    tree->Branch("W", &W);
-    tree->Branch("y", &y);
+    tree->Branch("pi_P", &pi_P);
+    tree->Branch("pi_Theta", &pi_Theta);
+    tree->Branch("pi_Phi", &pi_Phi);
     tree->Branch("run", &run);
     tree->Branch("evnum", &evnum);
     tree->Branch("torus", &torus);
@@ -128,7 +59,7 @@ int ex_B1_clas12root(const char * hipoFile = "/cache/clas12/rg-a/production/reco
     
     
     // Configure CLAS12 Reader and HipoChain
-    // Demand we see at least one electron
+    // Demand we see at least one pion
     // addAtLeastPid(#,#) stack, so you can define final states this way
     // -------------------------------------
     clas12root::HipoChain _chain;
@@ -136,8 +67,7 @@ int ex_B1_clas12root(const char * hipoFile = "/cache/clas12/rg-a/production/reco
 
     _chain.Add(hipoFile); // Can add more files for longer analysis
     _config_c12=_chain.GetC12Reader();
-    _config_c12->addAtLeastPid(11,1);     // At least 1 electron
-    //_config_c12->addAtLeastPid(211,1);     // At least 1 piplus
+    _config_c12->addAtLeastPid(211,1);     // At least 1 piplus
     
     // Add RUN::config bank
     // -------------------------------------
